@@ -29,9 +29,23 @@ exports.createAuction = async (req, res) => {
 // @GET /api/auctions
 exports.getAuctions = async (req, res) => {
   try {
-    const auctions = await Auction.find().populate('seller', 'name');
+    const auctions = await Auction.find()
+      .populate('seller', 'name')
+      .populate('bids.bidder', 'name email'); // Include bidder info
+
     res.json(auctions);
   } catch (err) {
     res.status(500).json({ message: 'Failed to get auctions' });
+  }
+};
+
+// Get auctions for logged-in seller
+exports.getSellerAuctions = async (req, res) => {
+  try {
+    const auctions = await Auction.find({ seller: req.user.id })
+      .populate('bids.bidder', 'name email');
+    res.json(auctions);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch seller auctions' });
   }
 };
