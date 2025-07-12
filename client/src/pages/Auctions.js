@@ -4,39 +4,58 @@ import AuctionCard from '../components/AuctionCard';
 
 const Auctions = () => {
   const [auctions, setAuctions] = useState([]);
+  const [filters, setFilters] = useState({
+    category: '',
+    name: '',
+    status: '',
+    minPrice: '',
+    maxPrice: ''
+  });
 
+  // Fetch auctions when filters change
   useEffect(() => {
-    const getAuctions = async () => {
-      try {
-        const res = await fetchAuctions();
-        setAuctions(res.data);
-      } catch (err) {
-        alert('Failed to load auctions');
-      }
-    };
-    getAuctions();
-  }, []);
+    const delayDebounce = setTimeout(() => {
+      const getAuctions = async () => {
+        try {
+          const res = await fetchAuctions(filters);
+          setAuctions(res.data);
+        } catch {
+          alert('Failed to load auctions');
+        }
+      };
+      getAuctions();
+    }, 400); // debounce typing delay
+
+    return () => clearTimeout(delayDebounce); // cleanup timeout
+  }, [filters]);
+
+  const handleChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white px-6 py-10 relative overflow-hidden">
-      {/* Gradient Background Glow */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-blue-600 opacity-20 rounded-full blur-3xl animate-pulse -z-10"></div>
-      <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500 opacity-20 rounded-full blur-3xl animate-pulse -z-10"></div>
+      {/* Filters */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-7xl mx-auto mb-8">
+        <input type="text" name="name" placeholder="Search name" value={filters.name} onChange={handleChange}
+          className="bg-gray-700 px-3 py-2 rounded text-white border border-gray-600" />
+        <input type="text" name="category" placeholder="Category" value={filters.category} onChange={handleChange}
+          className="bg-gray-700 px-3 py-2 rounded text-white border border-gray-600" />
+        <select name="status" value={filters.status} onChange={handleChange}
+          className="bg-gray-700 px-3 py-2 rounded text-white border border-gray-600">
+          <option value="">All Statuses</option>
+          <option value="live">Live</option>
+          <option value="ended">Ended</option>
+        </select>
+        <input type="number" name="minPrice" placeholder="Min Price" value={filters.minPrice} onChange={handleChange}
+          className="bg-gray-700 px-3 py-2 rounded text-white border border-gray-600" />
+        <input type="number" name="maxPrice" placeholder="Max Price" value={filters.maxPrice} onChange={handleChange}
+          className="bg-gray-700 px-3 py-2 rounded text-white border border-gray-600" />
+      </div>
 
-      {/* Title */}
-      <h2 className="text-3xl font-bold text-center mb-2 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
-        🚀 Live Auctions
-      </h2>
-
-      <p className="text-center text-gray-400 mb-8 text-sm">
-        Browse and place your bids on hot items before time runs out!
-      </p>
-
-      {/* Content */}
+      {/* Auction Cards */}
       {auctions.length === 0 ? (
-        <div className="text-center text-gray-400 text-lg mt-10">
-          <div className="animate-pulse text-blue-400">Fetching live auctions...</div>
-        </div>
+        <p className="text-center text-gray-400 mt-10">No auctions found.</p>
       ) : (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {auctions.map((auction) => (
