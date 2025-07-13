@@ -33,23 +33,22 @@ const BidRoom = () => {
   useEffect(() => {
     const fetchAuction = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/auctions');
-        const found = res.data.find((a) => a._id === id);
+        const res = await axios.get(`http://localhost:5000/api/auctions/${id}`);
+        const found = res.data;
         setAuction(found);
 
-        if (found) {
-          socket.emit('joinAuction', id);
-          socket.emit('identifyUser', userId);
+        socket.emit('joinAuction', id);
+        socket.emit('identifyUser', userId);
 
-          if (found.status === 'ended' && found.bids.length > 0) {
-            const last = found.bids[found.bids.length - 1];
-            setWinner(last.bidder?.name || 'Unknown');
-            setIsEnded(true);
-            setTimeLeft('Auction Ended');
-          }
+        if (found.status === 'ended' && found.bids.length > 0) {
+          const last = found.bids[found.bids.length - 1];
+          setWinner(last.bidder?.name || 'Unknown');
+          setIsEnded(true);
+          setTimeLeft('Auction Ended');
         }
-      } catch {
-        alert('Error fetching auction');
+      } catch (err) {
+        alert('❌ Error fetching auction');
+        console.error(err);
       }
     };
     fetchAuction();
@@ -64,11 +63,14 @@ const BidRoom = () => {
         ...prev,
         currentBid: data.amount,
         endTime: data.newEndTime,
-        bids: [...prev.bids, {
-          bidder: { _id: data.bidder, name: data.bidderName },
-          amount: data.amount,
-          time: data.time
-        }]
+        bids: [
+          ...prev.bids,
+          {
+            bidder: { _id: data.bidder, name: data.bidderName },
+            amount: data.amount,
+            time: data.time
+          }
+        ]
       }));
     });
 
@@ -188,7 +190,8 @@ const BidRoom = () => {
           <div className="space-y-2 max-h-40 overflow-y-auto text-sm">
             {auction.bids.map((b, i) => (
               <div key={i} className="bg-gray-700 border border-gray-600 px-3 py-2 rounded">
-                🧑 {b.bidder?.name || 'User'} bid Rs. {b.amount} at {new Date(b.time).toLocaleTimeString()}
+                🧑 {b.bidder?.name || 'User'} bid Rs. {b.amount} at{' '}
+                {new Date(b.time).toLocaleTimeString()}
               </div>
             ))}
           </div>

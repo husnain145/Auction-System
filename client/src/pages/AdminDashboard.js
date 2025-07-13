@@ -19,8 +19,14 @@ const AdminDashboard = () => {
       const res = await axios.get('http://localhost:5000/api/auctions', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setAuctions(res.data);
-    } catch {
+
+      // ✅ Fix: Safely handle the response whether it's wrapped in `auctions` or not
+      const data = res.data;
+      const auctionList = Array.isArray(data.auctions) ? data.auctions : data;
+      setAuctions(auctionList);
+
+    } catch (error) {
+      console.error('Fetch Auctions Error:', error);
       alert('Failed to load auctions');
     }
   };
@@ -44,6 +50,7 @@ const AdminDashboard = () => {
       setForm({ title: '', description: '', category: '', startingBid: '', endTime: '' });
       setImage(null);
     } catch (err) {
+      console.error('Create Auction Error:', err);
       alert('❌ Auction creation failed');
     }
   };
@@ -143,12 +150,11 @@ const AdminDashboard = () => {
                 <p className="text-sm text-gray-400 mb-1">Category: {a.category}</p>
                 <p>Status: <span className="text-yellow-400">{a.status}</span></p>
                 <p>Current Bid: <span className="text-green-400">Rs. {a.currentBid}</span></p>
-                {a.bids.length > 0 && a.status === 'ended' && (
+                {a.bids?.length > 0 && a.status === 'ended' && (
                   <p className="text-purple-300 mt-1">
                     🏆 Winner: {a.bids[a.bids.length - 1]?.bidder?.name}
                   </p>
                 )}
-
                 <div className="flex gap-2 mt-4">
                   <button
                     onClick={() => deleteAuction(a._id)}

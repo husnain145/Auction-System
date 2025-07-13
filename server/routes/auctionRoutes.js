@@ -7,6 +7,7 @@ const {
   createAuction,
   getAuctions,
   getSellerAuctions,
+  getAuctionById,
 } = require('../controllers/auctionController');
 
 const { protect, adminOnly } = require('../middleware/authMiddleware');
@@ -19,39 +20,20 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// 🚀 Routes
-
-// ✅ Create auction (any logged-in user: seller or admin)
+// ✅ Create auction
 router.post('/', protect, upload.single('image'), createAuction);
 
-// ✅ Get all auctions (with optional filters via query string)
-router.get('/', asyncHandler(async (req, res) => {
-  const { category, minPrice, maxPrice, name, status } = req.query;
-  const filter = {};
+// ✅ Use the correct getAuctions controller that supports filters + pagination
+router.get('/', asyncHandler(getAuctions));
 
-  if (category) filter.category = category;
-  if (status) filter.status = status;
-  if (name) filter.title = { $regex: name, $options: 'i' };
-  
-  if (minPrice || maxPrice) {
-    filter.currentBid = {};
-    if (minPrice) filter.currentBid.$gte = Number(minPrice);
-    if (maxPrice) filter.currentBid.$lte = Number(maxPrice);
-  }
-
-  try {
-    const auctions = await Auction.find(filter).populate('bids.bidder', 'name');
-    res.json(auctions);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error fetching auctions' });
-  }
-}));
-
-
-// ✅ Get logged-in seller's own auctions
+// ✅ Seller's own auctions
 router.get('/seller/my-auctions', protect, asyncHandler(getSellerAuctions));
 
-// ✅ Delete auction (admin or seller owner only)
+// ✅ Get a single auction by ID (needed by BidRoom)
+router.get('/:id', asyncHandler(getAuctionById));
+
+
+// ✅ Delete auction
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
   const auction = await Auction.findById(req.params.id);
   if (!auction) return res.status(404).json({ message: 'Auction not found' });
@@ -64,7 +46,7 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
   res.json({ message: 'Auction deleted successfully' });
 }));
 
-// ✅ PUT: Update auction by ID (admin or seller owner)
+// ✅ Update auction
 router.put('/:id', protect, asyncHandler(async (req, res) => {
   const auction = await Auction.findById(req.params.id);
   if (!auction) return res.status(404).json({ message: 'Auction not found' });
@@ -95,7 +77,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
   res.json({ message: 'Auction updated successfully', auction });
 }));
 
-// ✅ Admin: force end auction
+// ✅ Admin: end auction
 router.put('/:id/end', protect, adminOnly, asyncHandler(async (req, res) => {
   const auction = await Auction.findById(req.params.id);
   if (!auction) return res.status(404).json({ message: 'Auction not found' });

@@ -7,6 +7,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import PrivateRoute from './components/PrivateRoute';
 import Navbar from './components/Navbar';
 import SellerDashboard from './pages/SellerDashboard';
+import LandingPage from './pages/LandingPage';
+import Footer from './components/Footer';
 
 
 function App() {
@@ -14,12 +16,13 @@ function App() {
     <Router>
        <Navbar />
       <Routes >
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* ✅ Protected Routes */}
         <Route
-          path="/"
+          path="/auctions"
           element={
             <PrivateRoute allowedRoles={['admin', 'seller', 'bidder']}>
               <Auctions />
@@ -51,6 +54,7 @@ function App() {
   }
 />
       </Routes>
+      <Footer />
     </Router>
   );
 }

@@ -1,5 +1,4 @@
 const Auction = require('../models/Auction');
-const path = require('path');
 
 // @POST /api/auctions - Create a new auction
 exports.createAuction = async (req, res) => {
@@ -26,47 +25,77 @@ exports.createAuction = async (req, res) => {
   }
 };
 
-// @GET /api/auctions - Get all auctions (with optional filters)
-// @GET /api/auctions - Get all auctions (with optional filters)
+// @GET /api/auctions - Get all auctions with filters + pagination
 exports.getAuctions = async (req, res) => {
   try {
-    const { name, category, status, minPrice, maxPrice } = req.query;
+    const {
+      name,
+      category,
+      status,
+      minPrice,
+      maxPrice,
+      page = 1,
+      limit = 8
+    } = req.query;
 
     const filter = {};
 
-    // Title / Name Filter (case-insensitive partial match)
     if (name) {
       filter.title = { $regex: name, $options: 'i' };
     }
-
-    // Category Filter (case-insensitive partial match)
     if (category) {
-      filter.category = { $regex: category, $options: 'i' };
-    }
+  filter.category = { $regex: category, $options: 'i' }; // ✅ case-insensitive
+}
 
-    // Status Filter (live/ended)
-    if (status) {
-      filter.status = status;
-    }
+    if (status) filter.status = status;
 
-    // Price Range Filter (currentBid between min and max)
     if (minPrice || maxPrice) {
       const priceFilter = {};
-      if (minPrice) priceFilter.$gte = parseFloat(minPrice);
-      if (maxPrice) priceFilter.$lte = parseFloat(maxPrice);
-      filter.currentBid = priceFilter;
+      if (!isNaN(minPrice)) priceFilter.$gte = parseFloat(minPrice);
+      if (!isNaN(maxPrice)) priceFilter.$lte = parseFloat(maxPrice);
+      if (Object.keys(priceFilter).length > 0) {
+        filter.currentBid = priceFilter;
+      }
     }
 
-    const auctions = await Auction.find(filter)
-      .populate('seller', 'name')
-      .populate('bids.bidder', 'name email');
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    res.json(auctions);
+    const [total, auctions] = await Promise.all([
+      Auction.countDocuments(filter),
+      Auction.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('seller', 'name')
+        .populate('bids.bidder', 'name'),
+    ]);
+
+    // ✅ This is the correct format your frontend expects:
+    res.status(200).json({ auctions, total });
+
   } catch (err) {
-    console.error('❌ Auction fetch failed:', err.message);
-    res.status(500).json({ message: 'Failed to get auctions' });
+    console.error('❌ Error fetching auctions:', err);
+    res.status(500).json({ message: 'Failed to get auctions', error: err.message });
   }
 };
+
+// @GET /api/auctions/:id - Get single auction by ID
+exports.getAuctionById = async (req, res) => {
+  try {
+    const auction = await Auction.findById(req.params.id)
+      .populate('seller', 'name')
+      .populate('bids.bidder', 'name');
+
+    if (!auction) {
+      return res.status(404).json({ message: 'Auction not found' });
+    }
+
+    res.json(auction);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch auction', error: err.message });
+  }
+};
+
 
 
 
