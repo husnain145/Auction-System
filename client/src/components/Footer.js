@@ -22,7 +22,7 @@ const Footer = () => {
           <h4 className="text-xl font-semibold text-white mb-4">Quick Links</h4>
           <ul className="space-y-3">
             {[
-              { label: 'Live Auctions', to: '/' },
+              { label: 'Live Auctions', to: '/auctions' },
               { label: 'Login', to: '/login' },
               { label: 'Register', to: '/register' },
               { label: 'Contact Us', to: '/contact' },
