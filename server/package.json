@@ -20,7 +20,8 @@
     "multer": "^2.0.1",
     "nodemailer": "^7.0.5",
     "socket": "^1.0.48",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "stripe": "^18.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

@@ -1,11 +1,13 @@
+require('dotenv').config();
+const dotenv = require('dotenv');
 const express = require('express');
 const http = require('http');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+
 const cors = require('cors');
 const { Server } = require('socket.io');
 const endExpiredAuctions = require('./utils/endExpiredAuctions');
-
+const paymentRoutes = require('./routes/paymentRoutes');
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
@@ -24,6 +26,7 @@ app.use(express.json());
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/auctions', require('./routes/auctionRoutes'));
 app.use('/uploads', express.static('uploads'));
+app.use('/api/payments', paymentRoutes);
 
 // WebSockets
 require('./sockets/bidSocket')(io);

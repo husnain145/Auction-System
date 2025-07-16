@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import confetti from 'canvas-confetti';
+import CardCheckout from '../components/CardCheckout';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -56,8 +57,7 @@ const BidRoom = () => {
 
   useEffect(() => {
     socket.on('newBid', (data) => {
-      if (bidSound.current) bidSound.current.play();
-
+      bidSound.current?.play();
       setMessages((prev) => [...prev, `💰 Rs. ${data.amount} by ${data.bidderName}`]);
       setAuction((prev) => ({
         ...prev,
@@ -68,9 +68,9 @@ const BidRoom = () => {
           {
             bidder: { _id: data.bidder, name: data.bidderName },
             amount: data.amount,
-            time: data.time
-          }
-        ]
+            time: data.time,
+          },
+        ],
       }));
     });
 
@@ -90,18 +90,20 @@ const BidRoom = () => {
     if (!auction) return;
 
     const interval = setInterval(() => {
-      const end = dayjs(auction.endTime);
       const now = dayjs();
+      const end = dayjs(auction.endTime);
 
       if (now.isAfter(end)) {
         clearInterval(interval);
         setIsEnded(true);
         setTimeLeft('Auction Ended');
+
         const last = auction.bids?.[auction.bids.length - 1];
         const winnerName = last?.bidder?.name || 'Unknown';
         setWinner(winnerName);
+
         confetti();
-        if (winSound.current) winSound.current.play();
+        winSound.current?.play();
       } else {
         const diff = dayjs.duration(end.diff(now));
         setTimeLeft(`${diff.minutes()}m ${diff.seconds()}s`);
@@ -118,6 +120,8 @@ const BidRoom = () => {
   };
 
   if (!auction) return <p className="text-white text-center mt-10">Loading...</p>;
+
+  const isWinner = auction.bids.at(-1)?.bidder?._id === userId;
 
   return (
     <div className="bg-gray-900 text-white min-h-screen py-10 px-4">
@@ -169,10 +173,19 @@ const BidRoom = () => {
           <div className="text-center bg-red-700/30 border border-red-600 p-4 rounded-lg mb-6">
             <p className="text-red-300 font-semibold">⛔ Auction Ended</p>
             {winner && <p className="mt-2 text-green-400 font-bold">🏆 Winner: {winner}</p>}
+            {!auction.isPaid && isWinner && (
+              <div className="mt-4">
+                <p className="text-yellow-400 mb-2">⚠️ You won! Complete payment below:</p>
+                <CardCheckout auctionId={id} amount={auction.currentBid} />
+              </div>
+            )}
+            {auction.isPaid && (
+              <p className="text-blue-400 mt-2">✅ Payment Completed</p>
+            )}
           </div>
         )}
 
-        {/* Feed */}
+        {/* Live Feed */}
         <div className="mt-6">
           <h3 className="text-lg font-semibold text-blue-400 mb-2">📢 Live Bidding Feed</h3>
           <div className="space-y-1 max-h-32 overflow-y-auto text-sm">
@@ -184,7 +197,7 @@ const BidRoom = () => {
           </div>
         </div>
 
-        {/* History */}
+        {/* Bid History */}
         <div className="mt-6">
           <h3 className="text-lg font-semibold text-purple-400 mb-2">📜 Bid History</h3>
           <div className="space-y-2 max-h-40 overflow-y-auto text-sm">
