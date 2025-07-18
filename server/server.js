@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const dotenv = require('dotenv');
 const express = require('express');
 const http = require('http');
@@ -8,25 +9,32 @@ const cors = require('cors');
 const { Server } = require('socket.io');
 const endExpiredAuctions = require('./utils/endExpiredAuctions');
 const paymentRoutes = require('./routes/paymentRoutes');
+const authRoutes = require('./routes/authRoutes');
 dotenv.config();
+
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
     origin: "*", // Later replace with frontend URL
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
+
 app.use(cors());
 app.use(express.json());
+
+
 
 // Routes
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/auctions', require('./routes/auctionRoutes'));
 app.use('/uploads', express.static('uploads'));
 app.use('/api/payments', paymentRoutes);
+app.use('/api/auth', authRoutes);
 
 // WebSockets
 require('./sockets/bidSocket')(io);
